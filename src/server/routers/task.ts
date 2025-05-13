@@ -2,25 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
 import { taskSchema } from "@/shared/taskSchema";
 
-let tasks: z.infer<typeof taskSchema>[] = [
-    {
-        id: "1",
-        title: "Mock Task 1",
-        description: "This is a mock task for testing.",
-        createdDate: new Date().toISOString(),
-    },
-    {
-        id: "2",
-        title: "Mock Task 2",
-        description: "Another mock task for testing purposes.",
-        createdDate: new Date().toISOString(),
-    },
-    {
-        id: "3",
-        title: "Mock Task 3",
-        createdDate: new Date().toISOString(),
-    },
-]
+let tasks: z.infer<typeof taskSchema>[] = []
 export const taskRouter = router({
     create: publicProcedure
         .input(
