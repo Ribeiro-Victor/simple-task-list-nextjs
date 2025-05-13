@@ -4,14 +4,6 @@ import { taskSchema } from "@/shared/taskSchema";
 
 let tasks: z.infer<typeof taskSchema>[] = [];
 
-for (let i = 1; i <= 50; i++) {
-    tasks.push({
-        id: i.toString(),
-        title: `Mock Task ${i}`,
-        description: i % 2 === 0 ? `This is mock task number ${i}.` : undefined,
-        createdDate: new Date().toISOString(),
-    });
-}
 export const taskRouter = router({
     create: publicProcedure
         .input(
