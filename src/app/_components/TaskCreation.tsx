@@ -4,16 +4,23 @@ import { trpc } from "../_trpc/client";
 import { useEffect, useRef, useState } from 'react';
 import TaskItem from "./TaskItem";
 import { Task } from "@/shared/taskSchema";
+import Toast from "./Toast";
 
 export default function TaskCreation({
   initialTasks,
 }: {
   initialTasks: Task[];
 }) {
-  
+  const [toast, setToast] = useState<null | { type: 'success' | 'error'; message: string }>(null);
   const listAllTasks = trpc.task.getAll.useQuery(undefined, { initialData: initialTasks });
 
   const createTask = trpc.task.create.useMutation({
+    onSuccess: () => {
+      setToast({ type: 'success', message: 'Tarefa criada com sucesso!' });
+    },
+    onError: (error) => {
+      setToast({ type: 'error', message: `Erro ao criar tarefa: ${error.message}` });
+    },
     onSettled: () => {
       listAllTasks.refetch();
       resetForm();
@@ -21,6 +28,12 @@ export default function TaskCreation({
   });
 
   const updateTask = trpc.task.update.useMutation({
+    onSuccess: () => {
+      setToast({ type: 'success', message: 'Tarefa atualizada com sucesso!' });
+    },
+    onError: (error) => {
+      setToast({ type: 'error', message: `Erro ao atualizar tarefa: ${error.message}` });
+    },
     onSettled: () => {
       listAllTasks.refetch();
       resetForm();
@@ -59,6 +72,13 @@ export default function TaskCreation({
   return (
     <main className="p-4 max-w-xl mx-auto">
 
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
       <form onSubmit={handleSubmit} className="space-y-2">
         <input
           ref={titleInputRef}

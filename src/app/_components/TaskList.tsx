@@ -4,13 +4,14 @@ import { useState } from "react";
 import { trpc } from "../_trpc/client";
 import TaskItem from "./TaskItem";
 import { serverClient } from "../_trpc/serverClient";
+import Toast from "./Toast";
 
 export default function TaskList({
     initialTasks,
 }: {
     initialTasks: Awaited<ReturnType<(typeof serverClient)["task"]["getAll"]>>;
 }) {
-    const [showToast, setShowToast] = useState(false);
+    const [toast, setToast] = useState<null | { type: 'success' | 'error'; message: string }>(null);
     const utils = trpc.useUtils();
 
     const listAllTasks = trpc.task.getAll.useQuery(undefined,
@@ -20,8 +21,10 @@ export default function TaskList({
     const deleteTask = trpc.task.delete.useMutation({
         onSuccess: () => {
             utils.task.getAll.invalidate();
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 4000);
+            setToast({ type: 'success', message: 'Tarefa deletada com sucesso!' });
+        },
+        onError: (error) => {
+            setToast({ type: 'error', message: `Erro ao deletar: ${error.message}` });
         },
     });
 
@@ -29,17 +32,14 @@ export default function TaskList({
         <main className="p-4 max-w-xl mx-auto relative">
 
             {/* Toast popup */}
-            {showToast && (
-                <div
-                    className="fixed top-5 right-5 z-50 px-4 py-2 rounded shadow-lg transition-opacity duration-300"
-                    style={{
-                        backgroundColor: "#d4edda",
-                        color: "#155724",
-                    }}
-                >
-                    Tarefa deletada com sucesso!
-                </div>
+            {toast && (
+                <Toast
+                    type={toast.type}
+                    message={toast.message}
+                    onClose={() => setToast(null)}
+                />
             )}
+
 
             <ul className="mt-6 space-y-2">
                 {listAllTasks.data?.map((t) => (
