@@ -1,13 +1,8 @@
-import { serverClient } from "../_trpc/serverClient";
 import TaskCreation from "../_components/TaskCreation";
+import { serverClient } from "../_trpc/serverClient";
 
-export default async function EditPage() {
-  const tasks = await serverClient.task.getAll();
+export default async function Page() {
+  const { items } = await serverClient.task.getAll({ limit: 5 });
 
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Criar/Editar Tarefas</h1>
-      <TaskCreation initialTasks={tasks} />
-    </main>
-  );
+  return <TaskCreation initialTasks={items} />;
 }

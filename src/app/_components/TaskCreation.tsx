@@ -12,7 +12,20 @@ export default function TaskCreation({
   initialTasks: Task[];
 }) {
   const [toast, setToast] = useState<null | { type: 'success' | 'error'; message: string }>(null);
-  const listAllTasks = trpc.task.getAll.useQuery(undefined, { initialData: initialTasks });
+  const utils = trpc.useUtils();
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const taskQuery = trpc.task.getAll.useInfiniteQuery(
+    { limit: 5 },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      initialData: {
+        pages: [{ items: initialTasks, nextCursor: undefined }],
+        pageParams: [undefined],
+      },
+    }
+  );
 
   const createTask = trpc.task.create.useMutation({
     onSuccess: () => {
@@ -22,7 +35,7 @@ export default function TaskCreation({
       setToast({ type: 'error', message: `Erro ao criar tarefa: ${error.message}` });
     },
     onSettled: () => {
-      listAllTasks.refetch();
+      utils.task.getAll.invalidate();
       resetForm();
     },
   });
@@ -35,7 +48,7 @@ export default function TaskCreation({
       setToast({ type: 'error', message: `Erro ao atualizar tarefa: ${error.message}` });
     },
     onSettled: () => {
-      listAllTasks.refetch();
+      utils.task.getAll.invalidate();
       resetForm();
     },
   });
@@ -43,8 +56,6 @@ export default function TaskCreation({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-
-  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setTitle('');
@@ -62,16 +73,36 @@ export default function TaskCreation({
     }
   };
 
+  // Scroll infinito
   useEffect(() => {
-    listAllTasks.refetch();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && taskQuery.hasNextPage && !taskQuery.isFetchingNextPage) {
+          taskQuery.fetchNextPage();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    const current = loadMoreRef.current;
+    if (current) observer.observe(current);
+
+    return () => {
+      if (current) observer.unobserve(current);
+    };
+  }, [taskQuery]);
+
+  useEffect(() => {
     if (editingTaskId && titleInputRef.current) {
       titleInputRef.current.focus();
     }
   }, [editingTaskId]);
 
+  const allTasks = taskQuery.data?.pages.flatMap((page) => page.items) ?? [];
+
   return (
     <main className="p-4 max-w-xl mx-auto">
-
       {toast && (
         <Toast
           type={toast.type}
@@ -112,7 +143,7 @@ export default function TaskCreation({
       </form>
 
       <ul className="mt-6 space-y-2">
-        {listAllTasks.data?.map((t) => (
+        {allTasks.map((t) => (
           <TaskItem
             key={t.id}
             task={t}
@@ -124,6 +155,10 @@ export default function TaskCreation({
           />
         ))}
       </ul>
+
+      <div ref={loadMoreRef} className="h-10 flex justify-center items-center">
+        {taskQuery.isFetchingNextPage && <span>Carregando mais tarefas...</span>}
+      </div>
     </main>
   );
 }

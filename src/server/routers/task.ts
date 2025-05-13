@@ -2,7 +2,16 @@ import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
 import { taskSchema } from "@/shared/taskSchema";
 
-let tasks: z.infer<typeof taskSchema>[] = []
+let tasks: z.infer<typeof taskSchema>[] = [];
+
+for (let i = 1; i <= 50; i++) {
+    tasks.push({
+        id: i.toString(),
+        title: `Mock Task ${i}`,
+        description: i % 2 === 0 ? `This is mock task number ${i}.` : undefined,
+        createdDate: new Date().toISOString(),
+    });
+}
 export const taskRouter = router({
     create: publicProcedure
         .input(
@@ -22,12 +31,33 @@ export const taskRouter = router({
             return newTask;
         }),
 
-    getAll: publicProcedure.query(() => {
-        return tasks.map((task) => ({
-            ...task,
-            createdDate: task.createdDate,
-        }));
-    }),
+    getAll: publicProcedure
+        .input(
+            z.object({
+                cursor: z.string().optional(), // ID da última tarefa carregada
+                limit: z.number().min(1).max(50).optional().default(10),
+            }).optional()
+        )
+        .query(({ input }) => {
+            const { cursor, limit = 10 } = input ?? {};
+            let startIndex = 0;
+
+            if (cursor) {
+                const index = tasks.findIndex((t) => t.id === cursor);
+                if (index !== -1) {
+                    startIndex = index + 1;
+                }
+            }
+
+            const items = tasks.slice(startIndex, startIndex + limit);
+            const nextCursor = items.length === limit ? items[items.length - 1].id : undefined;
+
+            return {
+                items,
+                nextCursor,
+            };
+        }),
+
 
     update: publicProcedure
         .input(

@@ -1,13 +1,8 @@
-import { serverClient } from "../_trpc/serverClient";
 import TaskList from "../_components/TaskList";
+import { serverClient } from "../_trpc/serverClient";
 
-export default async function ViewPage() {
-  const tasks = await serverClient.task.getAll();
+export default async function Page() {
+  const { items } = await serverClient.task.getAll({ limit: 5 });
 
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Listar Tarefas</h1>
-      <TaskList initialTasks={tasks} />
-    </main>
-  );
+  return <TaskList initialTasks={items} />;
 }
