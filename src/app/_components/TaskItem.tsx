@@ -1,12 +1,8 @@
 import React from 'react';
+import { Task } from '@/shared/taskSchema';
 
 interface TaskItemProps {
-    task: {
-        id: string;
-        title: string;
-        description?: string;
-        createdDate: string;
-    };
+    task: Task
     onEdit?: () => void;
     onDelete?: () => void;
 }

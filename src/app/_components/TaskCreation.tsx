@@ -3,21 +3,26 @@
 import { trpc } from "../_trpc/client";
 import { useEffect, useRef, useState } from 'react';
 import TaskItem from "./TaskItem";
+import { Task } from "@/shared/taskSchema";
 
-export default function TaskCreation() {
-  const utils = trpc.useUtils();
-  const listAllTasks = trpc.task.getAll.useQuery();
+export default function TaskCreation({
+  initialTasks,
+}: {
+  initialTasks: Task[];
+}) {
+  
+  const listAllTasks = trpc.task.getAll.useQuery(undefined, { initialData: initialTasks });
 
   const createTask = trpc.task.create.useMutation({
-    onSuccess: () => {
-      utils.task.getAll.invalidate();
+    onSettled: () => {
+      listAllTasks.refetch();
       resetForm();
     },
   });
 
   const updateTask = trpc.task.update.useMutation({
-    onSuccess: () => {
-      utils.task.getAll.invalidate();
+    onSettled: () => {
+      listAllTasks.refetch();
       resetForm();
     },
   });
@@ -45,6 +50,7 @@ export default function TaskCreation() {
   };
 
   useEffect(() => {
+    listAllTasks.refetch();
     if (editingTaskId && titleInputRef.current) {
       titleInputRef.current.focus();
     }
@@ -52,10 +58,9 @@ export default function TaskCreation() {
 
   return (
     <main className="p-4 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Criar/Editar Tarefas</h1>
 
       <form onSubmit={handleSubmit} className="space-y-2">
-      <input
+        <input
           ref={titleInputRef}
           placeholder="Título"
           value={title}
